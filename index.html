@@ -997,155 +997,111 @@
 
     // สร้าง PDF จาก Canvas เพื่อรองรับภาษาไทย
     function generatePDFFromCanvas() {
-        // สร้าง div ชั่วคราวสำหรับ render PDF
-        const reportDiv = document.createElement('div');
-        reportDiv.className = 'pdf-report';
-        reportDiv.style.cssText = `
-            position: absolute;
-            top: -9999px;
-            left: -9999px;
-            width: 210mm;
-            background: white;
-            font-family: 'Sarabun', sans-serif;
-        `;
-
-        const schoolName = document.getElementById('school-name').textContent;
-        const period = document.getElementById('evaluation-period').textContent;
-        const total = allData.length;
-        const teachers = allData.filter(d => d.respondent_type === 'teacher').length;
-        const students = allData.filter(d => d.respondent_type === 'student').length;
-        const avg = total > 0 ? (allData.reduce((sum, d) => sum + d.overall_satisfaction, 0) / total).toFixed(2) : 0;
-
-        const categories = [
-            { field: 'fun_engagement', name: 'ความสนุกและการมีส่วนร่วม' },
-            { field: 'skill_understanding', name: 'ความเข้าใจทักษะลูกเสือ' },
-            { field: 'continuity', name: 'ความต่อเนื่องของการเรียนรู้' },
-            { field: 'discipline', name: 'ความมีวินัยและรับผิดชอบ' },
-            { field: 'time_suitability', name: 'ความเหมาะสมของเวลา' },
-            { field: 'moral_discipline', name: 'มีระเบียบวินัยและคุณธรรม' },
-            { field: 'practical_skills', name: 'เกิดทักษะและประยุกต์ใช้' },
-            { field: 'overall_satisfaction', name: 'ความพึงพอใจโดยรวม' }
+    // ⭐ เพิ่มการตรวจสอบข้อมูล
+    if (allData.length === 0) {
+        showError('ไม่มีข้อมูลสำหรับสร้างรายงาน - ให้เพิ่มข้อมูลตัวอย่างก่อน');
+        // เพิ่มข้อมูลตัวอย่างชั่วคราว
+        allData = [
+            {
+                respondent_type: 'student',
+                grade_level: 'm1',
+                fun_engagement: 5,
+                skill_understanding: 4,
+                continuity: 5,
+                discipline: 4,
+                time_suitability: 5,
+                moral_discipline: 4,
+                practical_skills: 5,
+                overall_satisfaction: 5
+            }
         ];
+    }
 
-        // สร้างตารางผลลัพธ์
-        let tableRows = '';
-        categories.forEach((cat, idx) => {
-            const vals = allData.map(d => d[cat.field]).filter(v => v > 0);
-            const catAvg = vals.length > 0 ? (vals.reduce((a,b) => a+b) / vals.length).toFixed(2) : '0.00';
-            
-            tableRows += `
-                <tr>
-                    <td>${cat.name}</td>
-                    <td style="text-align: center;">${catAvg}</td>
-                    <td style="text-align: center;">${vals.length}</td>
-                </tr>
-            `;
-        });
+    console.log('Data for PDF:', allData.length, 'records'); // ⭐ Debug
 
-        reportDiv.innerHTML = `
-            <div class="pdf-header">
-                <h1 class="pdf-title">รายงานผลการประเมิน Block Course</h1>
-                <h2 class="pdf-subtitle">${schoolName}</h2>
-                <div class="pdf-meta">
-                    <p>ช่วงเวลา: ${period}</p>
-                    <p>วันที่สร้างรายงาน: ${new Date().toLocaleDateString('th-TH')}</p>
-                </div>
-            </div>
+    const reportDiv = document.createElement('div');
+    reportDiv.style.cssText = `
+        position: absolute;
+        top: -9999px;
+        left: -9999px;
+        width: 800px;  /* ⭐ เปลี่ยนจาก 210mm เป็น px */
+        min-height: 600px;
+        padding: 40px;
+        background: white;
+        font-family: 'Sarabun', sans-serif;
+        font-size: 16px;
+        color: #2d3748;
+    `;
 
-            <div style="margin-bottom: 30px;">
-                <h3 style="color: #667eea; font-size: 18px; margin-bottom: 15px; border-bottom: 2px solid #667eea; padding-bottom: 5px;">
-                    สรุปสถิติ
-                </h3>
-                <div class="pdf-stats">
-                    <div class="pdf-stat-card">
-                        <div class="pdf-stat-number">${total}</div>
-                        <div class="pdf-stat-label">จำนวนผู้ตอบทั้งหมด</div>
-                    </div>
-                    <div class="pdf-stat-card">
-                        <div class="pdf-stat-number">${avg}</div>
-                        <div class="pdf-stat-label">คะแนนเฉลี่ยโดยรวม</div>
-                    </div>
-                    <div class="pdf-stat-card">
-                        <div class="pdf-stat-number">${teachers}</div>
-                        <div class="pdf-stat-label">ผู้กำกับลูกเสือ</div>
-                    </div>
-                    <div class="pdf-stat-card">
-                        <div class="pdf-stat-number">${students}</div>
-                        <div class="pdf-stat-label">นักเรียน</div>
-                    </div>
-                </div>
-            </div>
+    // ⭐ เพิ่มเนื้อหาทดสอบก่อน
+    reportDiv.innerHTML = `
+        <div style="text-align: center; padding: 20px; border: 2px solid #667eea;">
+            <h1 style="color: #667eea; font-size: 28px; margin-bottom: 20px;">
+                รายงานผลการประเมิน Block Course
+            </h1>
+            <h2 style="color: #4a5568; font-size: 20px;">
+                โรงเรียนสา
+            </h2>
+            <p style="color: #718096; font-size: 14px;">
+                จำนวนข้อมูล: ${allData.length} รายการ
+            </p>
+            <p style="color: #e53e3e; font-size: 14px;">
+                วันที่: ${new Date().toLocaleDateString('th-TH')}
+            </p>
+        </div>
+        
+        <div style="margin: 30px 0; padding: 20px; background: #f7fafc; border-radius: 10px;">
+            <h3 style="color: #667eea; margin-bottom: 15px;">สถิติสรุป</h3>
+            <p>จำนวนผู้ตอบ: ${allData.length} คน</p>
+            <p>คะแนนเฉลี่ย: ${allData.length > 0 ? (allData.reduce((sum, d) => sum + d.overall_satisfaction, 0) / allData.length).toFixed(2) : 0}/5</p>
+        </div>
+    `;
 
-            <div>
-                <h3 style="color: #667eea; font-size: 18px; margin-bottom: 15px; border-bottom: 2px solid #667eea; padding-bottom: 5px;">
-                    ตารางคะแนนเฉลี่ยแต่ละหัวข้อ
-                </h3>
-                <table class="pdf-table">
-                    <thead>
-                        <tr>
-                            <th>หัวข้อการประเมิน</th>
-                            <th style="text-align: center;">คะแนนเฉลี่ย</th>
-                            <th style="text-align: center;">จำนวนผู้ตอบ</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        ${tableRows}
-                    </tbody>
-                </table>
-            </div>
+    document.body.appendChild(reportDiv);
 
-            <div class="pdf-footer">
-                สร้างโดยระบบแบบประเมินลูกเสือ Block Course - ${schoolName}
-            </div>
-        `;
-
-        document.body.appendChild(reportDiv);
-
-        // ใช้ html2canvas เพื่อแปลงเป็นรูปภาพ แล้วใส่ลง PDF
+    // ⭐ เพิ่มการรอให้โหลดเสร็จ
+    setTimeout(() => {
         html2canvas(reportDiv, {
-            scale: 2, // เพิ่มความคมชัด
+            scale: 1, // ⭐ ลดจาก 2 เป็น 1 ก่อน
             useCORS: true,
             allowTaint: true,
             backgroundColor: '#ffffff',
-            logging: false, // ปิด log เพื่อความเร็ว
-            foreignObjectRendering: true // รองรับ CSS ได้ดีกว่า
+            logging: true, // ⭐ เปิด logging ไว้ดู error
+            width: 800,
+            height: 600
         }).then(canvas => {
+            console.log('Canvas created:', canvas.width, 'x', canvas.height); // ⭐ Debug
+            
             const { jsPDF } = window.jspdf;
             const doc = new jsPDF('p', 'mm', 'a4');
             
-            const imgData = canvas.toDataURL('image/png', 1.0); // ความคมชัดสูงสุด
-            const imgWidth = 210; // A4 width
-            const pageHeight = 297; // A4 height
-            const imgHeight = (canvas.height * imgWidth) / canvas.width;
-            let heightLeft = imgHeight;
-            let position = 0;
-
-            // เพิ่มรูปภาพลง PDF
-            doc.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
-            heightLeft -= pageHeight;
-
-            // เพิ่มหน้าใหม่ถ้าเนื้อหายาวเกินไป
-            while (heightLeft >= 0) {
-                position = heightLeft - imgHeight;
-                doc.addPage();
-                doc.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
-                heightLeft -= pageHeight;
+            const imgData = canvas.toDataURL('image/png');
+            console.log('Image data length:', imgData.length); // ⭐ Debug
+            
+            // ⭐ เพิ่มการตรวจสอบว่ามีรูปภาพหรือไม่
+            if (imgData.length < 100) {
+                showError('ไม่สามารถสร้างรูปภาพได้');
+                return;
             }
-
-            // ลบ element ชั่วคราว
+            
+            const imgWidth = 190;
+            const imgHeight = (canvas.height * imgWidth) / canvas.width;
+            
+            doc.addImage(imgData, 'PNG', 10, 10, imgWidth, imgHeight);
+            
             document.body.removeChild(reportDiv);
-
-            // ดาวน์โหลด PDF
-            const fileName = `ลูกเสือ_Block_Course_${new Date().toISOString().split('T')[0]}.pdf`;
+            
+            const fileName = `ลูกเสือ_Test_${Date.now()}.pdf`;
             doc.save(fileName);
             showSuccess('✅ สร้าง PDF สำเร็จ: ' + fileName);
-
+            
         }).catch(error => {
-            console.error('Canvas error:', error);
+            console.error('html2canvas error:', error); // ⭐ Debug
             document.body.removeChild(reportDiv);
-            showError('เกิดข้อผิดพลาดในการสร้าง PDF');
+            showError('เกิดข้อผิดพลาด: ' + error.message);
         });
-    }
+    }, 1000); // ⭐ รอ 1 วินาที
+}
 
     // CSV Download
     function downloadCSV() {
